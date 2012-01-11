@@ -47,6 +47,8 @@ NAME=$($BIN_DIR/detect $BUILD_DIR)
 # Where to store the Pip download cache.
 CACHED_DIRS=".heroku"
 PIP_DOWNLOAD_CACHE=${PIP_DOWNLOAD_CACHE:-$CACHE_DIR/pip_downloads}
+VIRTUALENV_DIRS="bin include lib"
+VENDORED_NODE="https://s3.amazonaws.com/audish-binaries/node-0.4.7.tgz"
 
 # Static configurations for virtualenv caches.
 LEGACY_VIRTUALENV_LOC="."
@@ -116,10 +118,46 @@ if [ ! -f requirements.txt ]; then
   echo "-e ." > requirements.txt
 fi
 
+# if pylibmc within requirements, use vendored libmemcached
+if (grep -Fxiq "pylibmc" requirements.txt) || (grep -Fiq "pylibmc=" requirements.txt)
+then
+    echo "-----> Noticed pylibmc. Bootstrapping libmemcached."
+    cd .heroku
+
+    if [ -d "vendor/lib/sasl2" ]; then
+      export LIBMEMCACHED=$(pwd)/vendor
+    else
+      curl -s -L -O $VENDORED_MEMCACHED
+      tar -zxvf vendor-libmemcached.tar.gz > /dev/null
+      rm vendor-libmemcached.tar.gz
+      export LIBMEMCACHED=$(pwd)/vendor
+    fi
+
+    export LIBMEMCACHED=$(pwd)/vendor
+    cd ..
+fi
+
+# if pyexecjs within requirements, use vendored node
+if (grep -v ^# requirements.txt | grep -Fiq "pyexecjs=" requirements.txt)
+then
+    echo "-----> Noticed pyexecjs. Bootstrapping node."
+
+    curl -L -s $VENDORED_NODE | tar -zx -C bin
+    # pyexecjs 1.0 has a bug where it expects an external binary called 'command'; we'll create this binary for it
+    #  and activate the venv so 'command' will be in the path (https://github.com/doloopwhile/PyExecJS/pull/1)
+    cat << EOF > bin/command
+#!/usr/bin/env bash
+
+
 # ### The Cache
 mkdir -p $CACHE_DIR
 [ ! "$(ls -A $CACHE_DIR)" ] && export FRESH_APP=1
 
+command "\$@"
+EOF
+    chmod 700 bin/command
+    source bin/activate
+fi
 
 # Nice defaults.
 LEGACY_VIRTUALENV=false
