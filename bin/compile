@@ -54,13 +54,13 @@ VENDORED_NODE="https://s3.amazonaws.com/audish-binaries/node-0.4.7.tgz"
 LEGACY_VIRTUALENV_LOC="."
 MODERN_VIRTUALENV_LOC=".heroku/venv"
 LEGACY_VIRTUALENV_DIRS="bin include lib"
-LEGACY_VIRTUALENV_TRIGGER="lib/python2.7"
+LEGACY_VIRTUALENV_TRIGGER="lib/python3.4"
 PROFILE_PATH="$1/.profile.d/python.sh"
 
 
 # Python version. This will be used in the future to specify custom Pythons.
-PYTHON_VERSION="2.7.2"
-PYTHON_EXE="python2.7"
+PYTHON_VERSION="3.4.3"
+PYTHON_EXE="python3.4"
 
 # Sanitizing environment variables.
 unset GIT_DIR PYTHONHOME PYTHONPATH LD_LIBRARY_PATH LIBRARY_PATH
@@ -175,7 +175,7 @@ if [ -d $CACHE_DIR/$LEGACY_VIRTUALENV_TRIGGER ]; then
   fi
 
   # Reject a conflicting checked-in virtualenv.
-  if [ -f "lib/python2.7" ]; then
+  if [ -f "lib/python3.4" ]; then
     puts-warn "Checked-in virtualenv conflict."
     exit 1;
   fi
